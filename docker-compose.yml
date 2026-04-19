@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  # ── Rails API ──────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      RAILS_ENV: production
+      RAILS_LOG_TO_STDOUT: "true"
+      RAILS_LOG_LEVEL: info
+      # Change this to a random secret before deploying publicly
+      SECRET_KEY_BASE: "changeme_use_a_real_secret_in_production_min_32_chars"
+      CORS_ORIGINS: "http://localhost:3000"
+      DATABASE_PATH: "db/production.sqlite3"
+    volumes:
+      # Persist SQLite DB across container restarts
+      - sqlite_data:/app/db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped
+
+  # ── Next.js UI ─────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # URL that the *browser* uses to reach the backend.
+        # When running locally, both services are reachable via localhost.
+        NEXT_PUBLIC_API_URL: "http://localhost:3001"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:

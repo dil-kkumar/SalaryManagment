@@ -1,0 +1,8 @@
+.git
+.gitignore
+log/
+tmp/
+spec/
+*.md
+.dockerignore
+db/*.sqlite3
