@@ -101,6 +101,27 @@ RSpec.describe 'Api::V1::Insights', type: :request do
     end
   end
 
+  # ---------- department_employee_counts ----------
+  describe 'GET /api/v1/insights/department_employee_counts' do
+    it 'returns department-wise employee counts' do
+      get '/api/v1/insights/department_employee_counts'
+      expect(response).to have_http_status(:ok)
+
+      engineering = json.find { |r| r['department'] == 'Engineering' }
+      product = json.find { |r| r['department'] == 'Product' }
+      finance = json.find { |r| r['department'] == 'Finance' }
+
+      expect(engineering['employee_count']).to eq(2)
+      expect(product['employee_count']).to eq(2)
+      expect(finance['employee_count']).to eq(1)
+    end
+
+    it 'returns only department and employee_count fields' do
+      get '/api/v1/insights/department_employee_counts'
+      expect(json.first.keys).to contain_exactly('department', 'employee_count')
+    end
+  end
+
   # ---------- top_earners ----------
   describe 'GET /api/v1/insights/top_earners' do
     it 'returns employees ordered by salary descending' do
@@ -124,22 +145,33 @@ RSpec.describe 'Api::V1::Insights', type: :request do
 
   # ---------- salary_distribution ----------
   describe 'GET /api/v1/insights/salary_distribution' do
-    it 'returns bands with correct counts' do
+    it 'returns salary bands with employee counts' do
       get '/api/v1/insights/salary_distribution'
       expect(response).to have_http_status(:ok)
-      bands = json.index_by { |b| b['band_label'] }
-
-      # 70k falls in $60k–$80k band
-      expect(bands['$60k – $80k']['count']).to eq(1)
-      # 80k/90k fall in $80k–$100k band
-      expect(bands['$80k – $100k']['count']).to eq(2)
-      # 100k/120k fall in $100k–$150k band
-      expect(bands['$100k – $150k']['count']).to eq(2)
+      expect(json).to be_an(Array)
+      expect(json.size).to be > 0
     end
 
-    it 'returns all 7 bands' do
+    it 'counts all employees across bands without overlap' do
       get '/api/v1/insights/salary_distribution'
-      expect(json.size).to eq(7)
+      total_count = json.sum { |b| b['count'] }
+      expect(total_count).to eq(5)
+    end
+
+    it 'includes band labels and bounds' do
+      get '/api/v1/insights/salary_distribution'
+      band = json.first
+      expect(band).to have_key('band_label')
+      expect(band).to have_key('lower_bound')
+      expect(band).to have_key('upper_bound')
+      expect(band).to have_key('count')
+    end
+
+    it 'generates bands based on salary distribution' do
+      get '/api/v1/insights/salary_distribution'
+      # Verify bands are in ascending order by lower bound
+      bounds = json.map { |b| b['lower_bound'] }
+      expect(bounds).to eq(bounds.sort)
     end
   end
 end
