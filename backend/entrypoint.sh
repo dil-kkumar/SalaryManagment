@@ -1,16 +1,20 @@
 #!/bin/sh
 set -e
 
+cd /app
+
 echo "==> Running DB migrations…"
-bundle exec rails db:create db:migrate
+bundle exec rake db:create db:migrate
 
 echo "==> Seeding database (skipped if already populated)…"
-bundle exec rails runner "
+bundle exec ruby -e "
+  require './config/environment'
+
   if Employee.count.zero?
-    puts 'Seeding 10,000 employees…'
+    puts 'Seeding 10,000 employees...'
     Rails.application.load_seed
   else
-    puts \"Database already has #{Employee.count} employees – skipping seed.\"
+    puts \"Database already has #{Employee.count} employees - skipping seed.\"
   end
 "
 
