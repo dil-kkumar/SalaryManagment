@@ -103,7 +103,7 @@ RSpec.describe 'Api::V1::Employees', type: :request do
       {
         employee: {
           first_name: 'Jane', last_name: 'Doe', email: 'jane.doe@example.com',
-          job_title: 'Engineer', department: 'Engineering', country: 'USA',
+          job_title: 'Software Engineer', department: 'Engineering', country: 'USA',
           salary: 95_000, employment_type: 'full-time',
           hire_date: '2023-03-15', status: 'active'
         }

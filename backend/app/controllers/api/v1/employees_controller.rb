@@ -6,44 +6,14 @@ module Api
 
       # GET /api/v1/employees
       def index
-        scope = Employee.all
-
-        # Filtering
-        scope = scope.where(country: params[:country])               if params[:country].present?
-        scope = scope.where(department: params[:department])         if params[:department].present?
-        scope = scope.where(job_title: params[:job_title])           if params[:job_title].present?
-        scope = scope.where(status: params[:status])                 if params[:status].present?
-        scope = scope.where(employment_type: params[:employment_type]) if params[:employment_type].present?
-
-        # Full-text search on name + email (parameterised – safe from SQL injection)
-        if params[:search].present?
-          term = "%#{params[:search].downcase}%"
-          scope = scope.where(
-            "LOWER(first_name || ' ' || last_name) LIKE :term OR LOWER(email) LIKE :term",
-            term: term
-          )
-        end
-
-        # Sorting – column name comes from a strict whitelist
-        sort_col = %w[first_name last_name salary hire_date country department job_title email].
-                   include?(params[:sort]) ? params[:sort] : 'last_name'
-        sort_dir = params[:direction] == 'desc' ? 'DESC' : 'ASC'
-        scope = scope.order(Arel.sql("#{sort_col} #{sort_dir}"))
-
-        # Pagination
-        total     = scope.count
-        page      = [params.fetch(:page, 1).to_i, 1].max
-        page_size = [[params.fetch(:page_size, 20).to_i, 1].max, 100].min
-        offset    = (page - 1) * page_size
-
-        items = scope.offset(offset).limit(page_size)
+        result = EmployeesIndexQuery.new(params).call
 
         render json: {
-          items:       serialize_employees(items),
-          total:       total,
-          page:        page,
-          page_size:   page_size,
-          total_pages: (total.to_f / page_size).ceil
+          items:       serialize_employees(result[:items]),
+          total:       result[:total],
+          page:        result[:page],
+          page_size:   result[:page_size],
+          total_pages: result[:total_pages]
         }
       end
 
