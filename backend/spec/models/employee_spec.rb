@@ -16,6 +16,7 @@ RSpec.describe Employee, type: :model do
     it { is_expected.to validate_presence_of(:salary) }
     it { is_expected.to validate_presence_of(:hire_date) }
 
+    it { is_expected.to validate_inclusion_of(:job_title).in_array(Employee::JOB_TITLES) }
     it { is_expected.to validate_inclusion_of(:employment_type).in_array(Employee::EMPLOYMENT_TYPES) }
     it { is_expected.to validate_inclusion_of(:status).in_array(Employee::STATUSES) }
 
@@ -28,6 +29,12 @@ RSpec.describe Employee, type: :model do
     it 'is invalid with a malformed email' do
       employee.email = 'not-an-email'
       expect(employee).not_to be_valid
+    end
+
+    it 'is invalid with a job title not in the configured list' do
+      employee.job_title = 'Unlisted Title'
+      expect(employee).not_to be_valid
+      expect(employee.errors[:job_title]).to be_present
     end
 
     it 'is valid with all required attributes' do

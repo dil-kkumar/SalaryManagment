@@ -19,18 +19,7 @@ DEPARTMENTS = %w[
   Engineering Product Design Marketing Sales Finance HR Operations Legal Data
 ].freeze
 
-JOB_TITLES = [
-  'Software Engineer', 'Senior Software Engineer', 'Staff Engineer',
-  'Principal Engineer', 'Engineering Manager', 'Product Manager',
-  'Senior Product Manager', 'UX Designer', 'Senior Designer',
-  'Data Scientist', 'Data Analyst', 'Analytics Engineer',
-  'DevOps Engineer', 'Site Reliability Engineer', 'QA Engineer',
-  'Marketing Manager', 'Growth Analyst', 'Sales Representative',
-  'Account Executive', 'Customer Success Manager', 'HR Specialist',
-  'Recruiter', 'Financial Analyst', 'Operations Manager',
-  'Legal Counsel', 'Business Analyst', 'Technical Lead',
-  'Solutions Architect', 'VP of Engineering', 'CTO'
-].freeze
+JOB_TITLES = Employee::JOB_TITLES
 
 COUNTRIES = %w[
   USA UK Canada Australia Germany France India Singapore Brazil
@@ -42,15 +31,15 @@ EMPLOYMENT_TYPES = Employee::EMPLOYMENT_TYPES
 STATUSES         = Employee::STATUSES
 
 # Salary ranges loosely correlated with job title index (higher index → higher band)
-BASE_SALARIES = JOB_TITLES.each_with_index.map { |_, i|
+BASE_SALARIES = Employee::JOB_TITLES.each_with_index.map { |_, i|
   40_000 + (i * 6_500)
 }.freeze
 
 puts "Seeding #{TARGET} employees…"
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-first_names = Rails.root.join('first_names.txt').readlines(chomp: true).reject(&:empty?)
-last_names  = Rails.root.join('last_names.txt').readlines(chomp: true).reject(&:empty?)
+first_names = Rails.root.join('data', 'first_names.txt').readlines(chomp: true).reject(&:empty?)
+last_names  = Rails.root.join('data', 'last_names.txt').readlines(chomp: true).reject(&:empty?)
 
 now = Time.now.utc
 

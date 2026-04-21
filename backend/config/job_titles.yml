@@ -1,0 +1,41 @@
+default: &default
+  list:
+    - Software Engineer
+    - Senior Software Engineer
+    - Staff Engineer
+    - Principal Engineer
+    - Engineering Manager
+    - Product Manager
+    - Senior Product Manager
+    - UX Designer
+    - Senior Designer
+    - Data Scientist
+    - Data Analyst
+    - Analytics Engineer
+    - DevOps Engineer
+    - Site Reliability Engineer
+    - QA Engineer
+    - Marketing Manager
+    - Growth Analyst
+    - Sales Representative
+    - Account Executive
+    - Customer Success Manager
+    - HR Specialist
+    - Recruiter
+    - Financial Analyst
+    - Operations Manager
+    - Legal Counsel
+    - Business Analyst
+    - Technical Lead
+    - Solutions Architect
+    - VP of Engineering
+    - CTO
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
