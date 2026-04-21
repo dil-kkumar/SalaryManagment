@@ -6,8 +6,10 @@ import type {
   CountrySalaryStats,
   TitleSalaryStats,
   DepartmentStats,
+  DepartmentEmployeeCount,
   TopEarner,
   SalaryBand,
+  StaticDataResponse,
 } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -95,6 +97,8 @@ export const insightsApi = {
 
   departmentStats: () => request<DepartmentStats[]>('/api/v1/insights/department_stats'),
 
+  departmentEmployeeCounts: () => request<DepartmentEmployeeCount[]>('/api/v1/insights/department_employee_counts'),
+
   topEarners: (limit = 10, country?: string, department?: string) => {
     const params = new URLSearchParams({ limit: String(limit) });
     if (country) params.set('country', country);
@@ -103,4 +107,8 @@ export const insightsApi = {
   },
 
   salaryDistribution: () => request<SalaryBand[]>('/api/v1/insights/salary_distribution'),
+};
+
+export const staticDataApi = {
+  list: () => request<StaticDataResponse>('/api/v1/static_data'),
 };

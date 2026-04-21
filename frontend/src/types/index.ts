@@ -40,6 +40,12 @@ export interface EmployeeFormData {
   status: EmployeeStatus;
 }
 
+export interface StaticDataResponse {
+  countries: string[];
+  job_titles: string[];
+  departments: string[];
+}
+
 // ─── Insights ────────────────────────────────────────────────────────────────
 export interface InsightsSummary {
   total_employees: number;
@@ -77,6 +83,11 @@ export interface DepartmentStats {
   avg_salary: number;
   active_count: number;
   inactive_count: number;
+}
+
+export interface DepartmentEmployeeCount {
+  department: string;
+  employee_count: number;
 }
 
 export interface TopEarner {
