@@ -1,32 +1,16 @@
-# ── Stage 1: install deps ──────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+FROM node:20-alpine
 WORKDIR /app
+
+# Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# ── Stage 2: build ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code (will be overridden by volume mount in docker-compose)
 COPY . .
-
-# NEXT_PUBLIC_API_URL is baked in at build time.
-# Override with: docker build --build-arg NEXT_PUBLIC_API_URL=http://your-host:3001
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
-RUN npm run build
-
-# ── Stage 3: runtime ───────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 ENV PORT 3000
 
-CMD ["node", "server.js"]
+# Use development server by default (live reload with volume mount)
+# For production: NODE_ENV=production npm run start
+CMD ["npm", "run", "dev"]

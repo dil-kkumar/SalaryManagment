@@ -2,6 +2,7 @@ import SummaryCards from '@/components/insights/SummaryCards';
 import SalaryByCountryChart from '@/components/insights/SalaryByCountryChart';
 import SalaryDistributionChart from '@/components/insights/SalaryDistributionChart';
 import DepartmentTable from '@/components/insights/DepartmentTable';
+import DepartmentEmployeeCountChart from '@/components/insights/DepartmentEmployeeCountChart';
 import TopEarnersList from '@/components/insights/TopEarnersList';
 import TitleSalaryTable from '@/components/insights/TitleSalaryTable';
 
@@ -17,9 +18,10 @@ export default function InsightsPage() {
       <SummaryCards />
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <SalaryByCountryChart />
         <SalaryDistributionChart />
+        <DepartmentEmployeeCountChart />
       </div>
 
       {/* Title salary + top earners */}
