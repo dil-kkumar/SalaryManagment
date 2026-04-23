@@ -49,12 +49,13 @@ module Api
       def employee_params
         params.require(:employee).permit(
           :first_name, :last_name, :email, :job_title, :department,
-          :country, :salary, :employment_type, :hire_date, :status
+          :country, :salary, :employment_type, :hire_date, :status,
+          custom_fields: {}
         )
       end
 
       EMPLOYEE_FIELDS = %i[id first_name last_name email job_title department
-                           country salary employment_type hire_date status
+                           country salary employment_type hire_date status custom_fields
                            created_at updated_at].freeze
 
       def serialize_employee(emp)

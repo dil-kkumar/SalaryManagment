@@ -105,7 +105,7 @@ RSpec.describe 'Api::V1::Employees', type: :request do
           first_name: 'Jane', last_name: 'Doe', email: 'jane.doe@example.com',
           job_title: 'Software Engineer', department: 'Engineering', country: 'USA',
           salary: 95_000, employment_type: 'full-time',
-          hire_date: '2023-03-15', status: 'active'
+          hire_date: '2023-03-15', status: 'active', custom_fields: {}
         }
       }
     end
@@ -126,6 +126,25 @@ RSpec.describe 'Api::V1::Employees', type: :request do
       create(:employee, email: 'jane.doe@example.com')
       post base_url, params: valid_params
       expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'persists country-specific custom fields' do
+      create(:country_custom_field,
+             country: 'India',
+             field_key: 'pan_number',
+             label: 'PAN Number',
+             field_type: 'text',
+             required: true)
+
+      params = valid_params.deep_dup
+      params[:employee][:country] = 'India'
+      params[:employee][:email] = 'india.employee@example.com'
+      params[:employee][:custom_fields] = { pan_number: 'ABCDE1234F' }
+
+      post base_url, params: params
+
+      expect(response).to have_http_status(:created)
+      expect(json['custom_fields']).to eq({ 'pan_number' => 'ABCDE1234F' })
     end
   end
 
@@ -148,6 +167,20 @@ RSpec.describe 'Api::V1::Employees', type: :request do
     it 'returns 422 on invalid update' do
       put "#{base_url}/#{employee.id}", params: { employee: { salary: -1 } }
       expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'updates employee custom fields' do
+      create(:country_custom_field,
+             country: 'USA',
+             field_key: 'ssn_last4',
+             label: 'SSN Last 4',
+             field_type: 'number')
+
+      put "#{base_url}/#{employee.id}", params: { employee: { custom_fields: { ssn_last4: '1234' } } }
+
+      expect(response).to have_http_status(:ok)
+      expect(json['custom_fields']).to eq({ 'ssn_last4' => '1234' })
+      expect(employee.reload.custom_fields).to eq({ 'ssn_last4' => '1234' })
     end
   end
 

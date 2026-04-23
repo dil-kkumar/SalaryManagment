@@ -2,6 +2,8 @@ import type {
   Employee,
   EmployeeFormData,
   EmployeeListResponse,
+  CountryCustomFieldDefinition,
+  CountryCustomFieldType,
   InsightsSummary,
   CountrySalaryStats,
   TitleSalaryStats,
@@ -111,4 +113,32 @@ export const insightsApi = {
 
 export const staticDataApi = {
   list: () => request<StaticDataResponse>('/api/v1/static_data'),
+};
+
+export interface CountryCustomFieldPayload {
+  country: string;
+  field_key?: string;
+  label: string;
+  field_type: CountryCustomFieldType;
+  placeholder?: string;
+  required?: boolean;
+}
+
+export const countryCustomFieldApi = {
+  list: () => request<CountryCustomFieldDefinition[]>('/api/v1/country_custom_fields'),
+
+  create: (data: CountryCustomFieldPayload) =>
+    request<CountryCustomFieldDefinition>('/api/v1/country_custom_fields', {
+      method: 'POST',
+      body: JSON.stringify({ country_custom_field: data }),
+    }),
+
+  update: (id: number, data: Partial<CountryCustomFieldPayload>) =>
+    request<CountryCustomFieldDefinition>(`/api/v1/country_custom_fields/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ country_custom_field: data }),
+    }),
+
+  delete: (id: number) =>
+    request<void>(`/api/v1/country_custom_fields/${id}`, { method: 'DELETE' }),
 };

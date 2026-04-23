@@ -63,4 +63,38 @@ RSpec.describe Employee, type: :model do
       expect(Employee::STATUSES).to contain_exactly('active', 'inactive')
     end
   end
+
+  describe 'country custom field validation' do
+    before do
+      create(:country_custom_field,
+             country: 'India',
+             field_key: 'pan_number',
+             label: 'PAN Number',
+             field_type: 'text',
+             required: true)
+    end
+
+    it 'accepts valid custom fields for the selected country' do
+      employee.country = 'India'
+      employee.custom_fields = { pan_number: 'ABCDE1234F' }
+
+      expect(employee).to be_valid
+    end
+
+    it 'rejects unknown custom field keys' do
+      employee.country = 'India'
+      employee.custom_fields = { visa_status: 'H1B' }
+
+      expect(employee).not_to be_valid
+      expect(employee.errors[:custom_fields]).to include("contains unknown field 'visa_status' for India")
+    end
+
+    it 'rejects missing required custom field values' do
+      employee.country = 'India'
+      employee.custom_fields = {}
+
+      expect(employee).not_to be_valid
+      expect(employee.errors[:custom_fields]).to include('PAN Number is required')
+    end
+  end
 end

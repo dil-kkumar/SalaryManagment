@@ -10,7 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_01_01_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_23_000002) do
+  create_table "country_custom_fields", force: :cascade do |t|
+    t.string "country", null: false
+    t.string "field_key", null: false
+    t.string "label", null: false
+    t.string "field_type", null: false
+    t.string "placeholder"
+    t.boolean "required", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["country", "field_key"], name: "index_country_custom_fields_on_country_and_field_key", unique: true
+    t.index ["country"], name: "index_country_custom_fields_on_country"
+  end
+
   create_table "employees", force: :cascade do |t|
     t.string "first_name", null: false
     t.string "last_name", null: false
@@ -24,6 +37,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_01_01_000001) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "custom_fields", default: "{}", null: false
     t.index ["country", "job_title"], name: "ix_employees_country_job_title"
     t.index ["country"], name: "index_employees_on_country"
     t.index ["department"], name: "index_employees_on_department"

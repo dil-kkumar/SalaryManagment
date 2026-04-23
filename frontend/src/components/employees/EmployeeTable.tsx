@@ -38,6 +38,7 @@ import { employeeApi, insightsApi } from '@/lib/api';
 import type { Employee } from '@/types';
 import EmployeeModal from './EmployeeModal';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
+import CountryCustomFieldsManager from './CountryCustomFieldsManager';
 
 const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const col = createColumnHelper<Employee>();
@@ -56,6 +57,7 @@ export default function EmployeeTable() {
 
   // ── modal state ────────────────────────────────────────────────────────────
   const [addOpen, setAddOpen]         = useState(false);
+  const [fieldsManagerOpen, setFieldsManagerOpen] = useState(false);
   const [editTarget, setEditTarget]   = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
@@ -215,9 +217,14 @@ export default function EmployeeTable() {
         </select>
 
         <div className="ml-auto">
-          <button className="btn-primary" onClick={() => setAddOpen(true)}>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary" onClick={() => setFieldsManagerOpen(true)}>
+              Manage Country Fields
+            </button>
+            <button className="btn-primary" onClick={() => setAddOpen(true)}>
             <Plus size={14} /> Add Employee
-          </button>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -319,6 +326,7 @@ export default function EmployeeTable() {
 
       {/* ── Modals ── */}
       {addOpen && <EmployeeModal onClose={() => setAddOpen(false)} />}
+      {fieldsManagerOpen && <CountryCustomFieldsManager onClose={() => setFieldsManagerOpen(false)} />}
       {editTarget && <EmployeeModal employee={editTarget} onClose={() => setEditTarget(null)} />}
       {deleteTarget && (
         <DeleteConfirmDialog

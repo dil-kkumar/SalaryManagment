@@ -15,6 +15,7 @@ export interface Employee {
   employment_type: EmploymentType;
   hire_date: string;
   status: EmployeeStatus;
+  custom_fields: Record<string, string>;
   created_at: string;
   updated_at: string;
 }
@@ -38,12 +39,26 @@ export interface EmployeeFormData {
   employment_type: EmploymentType;
   hire_date: string;
   status: EmployeeStatus;
+  custom_fields?: Record<string, string>;
+}
+
+export type CountryCustomFieldType = 'text' | 'number' | 'date';
+
+export interface CountryCustomFieldDefinition {
+  id: number;
+  country: string;
+  field_key: string;
+  label: string;
+  field_type: CountryCustomFieldType;
+  placeholder: string | null;
+  required: boolean;
 }
 
 export interface StaticDataResponse {
   countries: string[];
   job_titles: string[];
   departments: string[];
+  country_custom_fields: Record<string, CountryCustomFieldDefinition[]>;
 }
 
 // ─── Insights ────────────────────────────────────────────────────────────────

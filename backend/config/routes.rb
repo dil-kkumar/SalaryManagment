@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :employees
+      resources :country_custom_fields, only: %i[index create update destroy]
       resources :static_data, only: [:index]
 
       namespace :insights do

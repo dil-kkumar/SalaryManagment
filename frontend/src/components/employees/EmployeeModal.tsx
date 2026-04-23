@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { employeeApi, staticDataApi } from '@/lib/api';
-import type { Employee, EmployeeFormData } from '@/types';
+import type { CountryCustomFieldDefinition, Employee, EmployeeFormData } from '@/types';
 
 const schema = z.object({
   first_name:      z.string().trim().min(1, 'Required').max(100),
@@ -29,6 +29,7 @@ const schema = z.object({
     .string()
     .min(1, 'Required')
     .refine((v) => ['active', 'inactive'].includes(v), 'Invalid status'),
+  custom_fields: z.record(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -65,6 +66,8 @@ export default function EmployeeModal({ employee, onClose }: Props) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -73,12 +76,33 @@ export default function EmployeeModal({ employee, onClose }: Props) {
           ...employee,
           salary: employee.salary,
           hire_date: employee.hire_date?.slice(0, 10),
+          custom_fields: employee.custom_fields ?? {},
         }
       : {
           employment_type: '',
           status: '',
+          custom_fields: {},
         },
   });
+
+  const selectedCountry = watch('country');
+  const customFieldDefinitions = useMemo<CountryCustomFieldDefinition[]>(() => {
+    if (!selectedCountry) return [];
+    return staticData?.country_custom_fields?.[selectedCountry] ?? [];
+  }, [selectedCountry, staticData]);
+
+  const onCountryChange = (country: string) => {
+    setValue('country', country, { shouldDirty: true, shouldValidate: true });
+    const definitions = staticData?.country_custom_fields?.[country] ?? [];
+    const nextValues: Record<string, string> = {};
+
+    definitions.forEach((definition) => {
+      const existing = employee?.custom_fields?.[definition.field_key];
+      if (existing) nextValues[definition.field_key] = String(existing);
+    });
+
+    setValue('custom_fields', nextValues, { shouldDirty: true, shouldValidate: false });
+  };
 
   const mutation = useMutation({
     mutationFn: (data: EmployeeFormData) =>
@@ -104,7 +128,28 @@ export default function EmployeeModal({ employee, onClose }: Props) {
     },
   });
 
-  const onSubmit = (data: FormValues) => mutation.mutate(data as EmployeeFormData);
+  const onSubmit = (data: FormValues) => {
+    const values = (data.custom_fields ?? {}) as Record<string, string>;
+    const requiredMissing = customFieldDefinitions.find((definition) => {
+      if (!definition.required) return false;
+      return !String(values[definition.field_key] ?? '').trim();
+    });
+
+    if (requiredMissing) {
+      setSubmitFeedback({
+        type: 'error',
+        message: `${requiredMissing.label} is required for ${selectedCountry}.`,
+      });
+      return;
+    }
+
+    const payload: EmployeeFormData = {
+      ...data,
+      custom_fields: values,
+    };
+
+    mutation.mutate(payload);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -142,6 +187,8 @@ export default function EmployeeModal({ employee, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="px-6 py-5 space-y-4">
+          <input type="hidden" {...register('country')} />
+
           <div className="grid grid-cols-2 gap-4">
             <Field label="First Name" error={errors.first_name?.message}>
               <input className="input" {...register('first_name')} />
@@ -185,14 +232,22 @@ export default function EmployeeModal({ employee, onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Country" error={errors.country?.message}>
               {countryOptions.length > 0 ? (
-                <select className="input" {...register('country')}>
+                <select
+                  className="input"
+                  value={selectedCountry || ''}
+                  onChange={(e) => onCountryChange(e.target.value)}
+                >
                   <option value="">Select Country</option>
                   {countryOptions.map((country) => (
                     <option key={country} value={country}>{country}</option>
                   ))}
                 </select>
               ) : (
-                <input className="input" {...register('country')} />
+                <input
+                  className="input"
+                  value={selectedCountry || ''}
+                  onChange={(e) => onCountryChange(e.target.value)}
+                />
               )}
             </Field>
             <Field label="Annual Salary (USD)" error={errors.salary?.message}>
@@ -221,6 +276,31 @@ export default function EmployeeModal({ employee, onClose }: Props) {
           <Field label="Hire Date" error={errors.hire_date?.message}>
             <input className="input" type="date" {...register('hire_date')} />
           </Field>
+
+          {customFieldDefinitions.length > 0 && (
+            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h3 className="text-sm font-semibold text-gray-800">Country-specific information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {customFieldDefinitions.map((definition) => {
+                  const inputType = definition.field_type === 'number' ? 'number' : definition.field_type === 'date' ? 'date' : 'text';
+                  return (
+                    <div key={definition.id}>
+                      <label className="label">
+                        {definition.label}
+                        {definition.required ? <span className="text-red-600"> *</span> : null}
+                      </label>
+                      <input
+                        className="input"
+                        type={inputType}
+                        placeholder={definition.placeholder ?? ''}
+                        {...register(`custom_fields.${definition.field_key}` as const)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <button type="button" className="btn-secondary" onClick={onClose}>
