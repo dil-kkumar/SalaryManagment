@@ -97,3 +97,44 @@ bundle exec rspec -f documentation
 | GET | `/api/v1/insights/top_earners` | Top N earners |
 | GET | `/api/v1/insights/salary_distribution` | Salary band histogram |
 | GET | `/health` | Health check |
+| POST | `/api/v1/employees/import` | Bulk import employees from CSV |
+| GET | `/api/v1/employees/export` | Export employees as CSV or XLSX (supports filters) |
+
+## Bulk Import/Export
+
+### Import Employees from CSV
+- Upload CSV file with employee data (headers: first_name, last_name, email, job_title, department, country, salary, employment_type, hire_date, status)
+- **Note**: Country-specific custom fields are ignored during bulk import. Add them manually after import via the "Manage Country Fields" UI.
+- Returns success count and detailed error messages for failed rows
+- HR Manager can access via "Import" button on Employees table
+
+### Export Employees
+- Download employee data as CSV or XLSX
+- Export respects all active filters (country, department, status, search)
+- Files are timestamped (employees_YYYYMMDD_HHMMSS.csv|xlsx)
+- HR Manager can access via "CSV" or "Excel" buttons on Employees table
+
+## Audit Logging
+
+- All sensitive operations (create, update, delete) on employees and country custom fields are logged
+- Audit logs include: action type, changed values (before/after), timestamp, and IP address
+- Audit logs stored in database for compliance and forensics
+- See `audit_logs` table for full history
+
+## Security
+
+### Input Protection
+- Query parameters for sorting are validated against an allowlist to prevent SQL injection
+- All text inputs (name, email, custom fields) are sanitized to remove leading/trailing whitespace and normalize to safe formats
+- Email addresses are normalized to lowercase for case-insensitive uniqueness enforcement
+- Mass-assignment protection prevents unauthorized field modification
+
+### Model-Level Validation
+- Employee and custom-field create/update operations validate field presence, type, and format
+- Custom field values are scoped by country, preventing injection of unknown fields
+- Email addresses must be unique and valid format
+
+### Not in Scope (Current)
+- Authentication & authorization (out of scope)
+- Rate limiting (recommended for production)
+- HTTPS enforcement (handle at reverse proxy / load balancer)

@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # ── Gem install layer (cached unless Gemfile changes) ──────────────────────
-COPY Gemfile ./
-# Generate fresh Gemfile.lock inside the image
+COPY Gemfile Gemfile.lock ./
+# Install exactly what is pinned in Gemfile.lock
 RUN bundle install --jobs 4 --retry 3
 
 # ── Application code ───────────────────────────────────────────────────────

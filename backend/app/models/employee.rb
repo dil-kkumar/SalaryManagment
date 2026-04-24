@@ -10,9 +10,14 @@ class Employee < ApplicationRecord
 
   before_validation :normalize_attributes
   before_validation :normalize_custom_fields
+  before_create     :assign_employee_id
+  after_create :log_creation
+  after_update :log_update
+  after_destroy :log_deletion
 
   validates :first_name,       presence: true, length: { maximum: 100 }
   validates :last_name,        presence: true, length: { maximum: 100 }
+  validates :employee_id,      uniqueness: true, allow_nil: true
   validates :email,            presence: true, uniqueness: { case_sensitive: false },
                                format: { with: URI::MailTo::EMAIL_REGEXP, message: 'is not a valid email' }
   validates :job_title,        presence: true, length: { maximum: 100 }
@@ -97,5 +102,30 @@ class Employee < ApplicationRecord
     rescue ArgumentError, TypeError
       errors.add(:custom_fields, "#{definition.label} must be a valid #{definition.field_type}")
     end
+  end
+
+  def log_creation
+    AuditLog.log(self, AuditLog::ACTIONS[:create], attributes.except('created_at', 'updated_at'))
+  end
+
+  def log_update
+    AuditLog.log(
+      self,
+      AuditLog::ACTIONS[:update],
+      previous_changes.except('created_at', 'updated_at').transform_values { |v| { before: v[0], after: v[1] } }
+    )
+  end
+
+  def log_deletion
+    AuditLog.log(self, AuditLog::ACTIONS[:delete], attributes.except('created_at', 'updated_at'))
+  end
+
+  def assign_employee_id
+    return if employee_id.present?
+
+    # Generate a temporary candidate; after insert the real id is known so we
+    # use a two-step approach: assign a sequence-based value using the max id.
+    next_seq = (self.class.maximum(:id) || 0) + 1
+    self.employee_id = format('EMP%06d', next_seq)
   end
 end

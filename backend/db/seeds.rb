@@ -64,6 +64,7 @@ now = Time.now.utc
       employment_type: EMPLOYMENT_TYPES[idx % EMPLOYMENT_TYPES.size],
       hire_date:       Date.new(2015, 1, 1) + (idx % (365 * 9)),
       status:          (idx % 10).zero? ? 'inactive' : 'active',
+      employee_id:     format('EMP%06d', idx + 1),
       created_at:      now,
       updated_at:      now
     }

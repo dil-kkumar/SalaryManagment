@@ -61,6 +61,13 @@
 - `MIN`, `MAX`, `AVG`, `COUNT` computed in SQLite → no 10k-row fetch to Ruby
 - Single indexed query per insight endpoint
 
+### 7. Security by Design
+- **SQL injection prevention**: sort parameters validated against field allowlist; query objects use parameterized queries
+- **Input sanitization**: text inputs trimmed and normalized in model layer; custom field validation enforces country scope
+- **Email safety**: normalized to lowercase, unique constraint at DB layer, validated format in model
+- **SSRF**: no outbound HTTP clients in current request flow; future integrations should use allowlisted endpoints
+- **No hard-coded secrets**: database credentials via environment variables
+
 ---
 
 ## Employee Data Model
@@ -103,3 +110,26 @@ Composite index on `(country, job_title)` accelerates the `title_salary` insight
 3. **Keyset pagination** – consistent perf beyond 1M rows
 4. **Redis cache** – TTL on `/insights/*` endpoints (read-heavy, infrequently changing)
 5. **Background jobs** – heavy exports via Sidekiq/GoodJob
+
+---
+
+## Bulk Operations & Audit Trail
+
+### CSV Import Service
+- Parses CSV with strict header validation (required: first_name, last_name, email, job_title, department, country, salary, employment_type, hire_date, status)
+- **Custom fields ignored**: Country-specific fields must be added manually after import
+- Line-by-line validation with detailed error messages
+- Automatic sanitization and type coercion (dates, salary numbers)
+- Returns summary: successful imports + per-line errors
+
+### File Export Service
+- Generates CSV or XLSX with all employee fields + timestamps
+- Respects query filters (country, department, status, search)
+- XLSX formatting: header styling, column widths, auto-adjustment
+- Timestamped filename for traceability
+
+### Audit Logging
+- Automatic tracking of create/update/delete operations on Employee and CountryCustomField
+- Records: action type, attribute changes (before/after), timestamp, user context (future: auth integration)
+- Audit logs indexed on auditable_type, action, created_at for fast queries
+- JSON-serialized changes for flexible diff/forensics

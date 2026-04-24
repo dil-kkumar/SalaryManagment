@@ -223,6 +223,90 @@ RSpec.describe 'Api::V1::Employees', type: :request do
     end
   end
 
+  # ---------- Mass-Assignment Protection ----------
+  describe 'Mass-assignment protection' do
+    let(:valid_params) do
+      {
+        employee: {
+          first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com',
+          job_title: 'Software Engineer', department: 'Engineering', country: 'USA',
+          salary: 95_000, employment_type: 'full-time',
+          hire_date: '2023-03-15', status: 'active', custom_fields: {}
+        }
+      }
+    end
+
+    context 'POST /api/v1/employees' do
+      it 'ignores id parameter and generates a new id' do
+        params = valid_params.deep_dup
+        params[:employee][:id] = 9999
+
+        post base_url, params: params
+
+        expect(response).to have_http_status(:created)
+        expect(json['id']).not_to eq(9999)
+        expect(Employee.last.id).not_to eq(9999)
+      end
+
+      it 'ignores created_at and updated_at parameters' do
+        future_time = 2.years.from_now.iso8601
+
+        params = valid_params.deep_dup
+        params[:employee][:created_at] = future_time
+        params[:employee][:updated_at] = future_time
+
+        post base_url, params: params
+
+        expect(response).to have_http_status(:created)
+        created_employee = Employee.last
+        expect(created_employee.created_at.year).to eq(Time.zone.now.year)
+        expect(created_employee.updated_at.year).to eq(Time.zone.now.year)
+      end
+
+      it 'rejects unknown attributes gracefully' do
+        params = valid_params.deep_dup
+        params[:employee][:internal_notes] = 'Secret info'
+        params[:employee][:admin_flag] = true
+
+        post base_url, params: params
+
+        expect(response).to have_http_status(:created)
+        created_employee = Employee.last
+        expect(created_employee.respond_to?(:internal_notes)).to be false
+        expect(created_employee.respond_to?(:admin_flag)).to be false
+      end
+    end
+
+    context 'PUT /api/v1/employees/:id' do
+      let(:employee) { create(:employee) }
+      let(:original_id) { employee.id }
+      let(:original_created_at) { employee.created_at }
+
+      it 'ignores id parameter in update' do
+        put "#{base_url}/#{employee.id}", params: { employee: { id: 9999, salary: 100_000 } }
+
+        expect(response).to have_http_status(:ok)
+        expect(employee.reload.id).to eq(original_id)
+      end
+
+      it 'ignores created_at parameter in update' do
+        past_time = 5.years.ago.iso8601
+
+        put "#{base_url}/#{employee.id}", params: { employee: { created_at: past_time, salary: 100_000 } }
+
+        expect(response).to have_http_status(:ok)
+        expect(employee.reload.created_at).to eq(original_created_at)
+      end
+
+      it 'rejects unknown attributes during update' do
+        put "#{base_url}/#{employee.id}", params: { employee: { internal_notes: 'Updated secret', salary: 100_000 } }
+
+        expect(response).to have_http_status(:ok)
+        expect(employee.reload.respond_to?(:internal_notes)).to be false
+      end
+    end
+  end
+
   # ---------- DELETE /api/v1/employees/:id ----------
   describe 'DELETE /api/v1/employees/:id' do
     let!(:employee) { create(:employee) }

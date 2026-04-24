@@ -26,6 +26,21 @@ Out of scope (future phases):
 - Payroll processing and integrations
 - File upload and document attachments
 - Multi-currency compensation normalization
+- Rate limiting and request throttling
+- HTTPS/TLS enforcement (delegated to infrastructure)
+
+In scope (current) – Security hardening:
+- SQL injection prevention via parameterized queries and sort allowlisting
+- Input sanitization for text fields and custom field values
+- Email normalization and uniqueness enforcement
+- SSRF: no outbound requests in current request paths
+- Audit logging for sensitive operations (create, update, delete)
+- Mass-assignment protection with strong parameters
+
+In scope (current) – Bulk operations:
+- CSV import with validation and error reporting
+- CSV/XLSX export with filter support
+- Custom field support in import/export
 
 ## 3. Architecture Overview
 Frontend:

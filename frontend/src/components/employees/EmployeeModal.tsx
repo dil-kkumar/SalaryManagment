@@ -189,6 +189,14 @@ export default function EmployeeModal({ employee, onClose }: Props) {
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="px-6 py-5 space-y-4">
           <input type="hidden" {...register('country')} />
 
+          {/* Employee ID – read-only badge shown only in edit mode */}
+          {isEdit && employee?.employee_id && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+              <span className="text-xs text-blue-500 font-medium uppercase tracking-wide">Employee ID</span>
+              <span className="font-mono text-sm font-bold text-blue-700">{employee.employee_id}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <Field label="First Name" error={errors.first_name?.message}>
               <input className="input" {...register('first_name')} />

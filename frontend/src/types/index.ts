@@ -4,6 +4,7 @@ export type EmployeeStatus = 'active' | 'inactive';
 
 export interface Employee {
   id: number;
+  employee_id: string;
   first_name: string;
   last_name: string;
   full_name: string;

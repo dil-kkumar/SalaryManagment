@@ -3,6 +3,9 @@ set -e
 
 cd /app
 
+echo "==> Checking gems…"
+bundle check || bundle install --jobs 4 --retry 3
+
 echo "==> Running DB migrations…"
 bundle exec rake db:create db:migrate
 
