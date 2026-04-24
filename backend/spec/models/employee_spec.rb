@@ -9,7 +9,7 @@ RSpec.describe Employee, type: :model do
     it { is_expected.to validate_presence_of(:first_name) }
     it { is_expected.to validate_presence_of(:last_name) }
     it { is_expected.to validate_presence_of(:email) }
-    it { is_expected.to validate_uniqueness_of(:email) }
+    it { is_expected.to validate_uniqueness_of(:email).case_insensitive }
     it { is_expected.to validate_presence_of(:job_title) }
     it { is_expected.to validate_presence_of(:department) }
     it { is_expected.to validate_presence_of(:country) }
@@ -29,6 +29,15 @@ RSpec.describe Employee, type: :model do
     it 'is invalid with a malformed email' do
       employee.email = 'not-an-email'
       expect(employee).not_to be_valid
+    end
+
+    it 'treats differently cased emails as duplicates' do
+      create(:employee, email: 'alice@example.com')
+
+      duplicate = build(:employee, email: 'ALICE@EXAMPLE.COM')
+
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:email]).to include('has already been taken')
     end
 
     it 'is invalid with a job title not in the configured list' do
@@ -95,6 +104,28 @@ RSpec.describe Employee, type: :model do
 
       expect(employee).not_to be_valid
       expect(employee.errors[:custom_fields]).to include('PAN Number is required')
+    end
+
+    it 'rejects non-scalar custom field values' do
+      employee.country = 'India'
+      employee.custom_fields = { pan_number: { value: 'ABCDE1234F' } }
+
+      expect(employee).not_to be_valid
+      expect(employee.errors[:custom_fields]).to include('PAN Number must be a scalar value')
+    end
+  end
+
+  describe 'normalization' do
+    it 'normalizes text attributes before validation' do
+      employee.first_name = '  <b>Alice</b> '
+      employee.email = '  ALICE@EXAMPLE.COM '
+      employee.department = "\n Engineering \t"
+
+      employee.validate
+
+      expect(employee.first_name).to eq('Alice')
+      expect(employee.email).to eq('alice@example.com')
+      expect(employee.department).to eq('Engineering')
     end
   end
 end

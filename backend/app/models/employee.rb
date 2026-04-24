@@ -8,11 +8,12 @@ class Employee < ApplicationRecord
 
   serialize :custom_fields, coder: JSON
 
+  before_validation :normalize_attributes
   before_validation :normalize_custom_fields
 
   validates :first_name,       presence: true, length: { maximum: 100 }
   validates :last_name,        presence: true, length: { maximum: 100 }
-  validates :email,            presence: true, uniqueness: true,
+  validates :email,            presence: true, uniqueness: { case_sensitive: false },
                                format: { with: URI::MailTo::EMAIL_REGEXP, message: 'is not a valid email' }
   validates :job_title,        presence: true, length: { maximum: 100 }
   validates :job_title,        inclusion: { in: JOB_TITLES }
@@ -30,12 +31,25 @@ class Employee < ApplicationRecord
 
   private
 
+  def normalize_attributes
+    self.first_name = InputSanitizer.text(first_name, max_length: 100)
+    self.last_name = InputSanitizer.text(last_name, max_length: 100)
+    self.email = InputSanitizer.text(email, max_length: 255, downcase: true)
+    self.job_title = InputSanitizer.text(job_title, max_length: 100)
+    self.department = InputSanitizer.text(department, max_length: 100)
+    self.country = InputSanitizer.text(country, max_length: 100)
+    self.employment_type = InputSanitizer.text(employment_type, max_length: 50)
+    self.status = InputSanitizer.text(status, max_length: 50)
+  end
+
   def normalize_custom_fields
     self.custom_fields = case custom_fields
     when nil
       {}
     when Hash
-      custom_fields.deep_stringify_keys
+      custom_fields.deep_stringify_keys.transform_values do |value|
+        InputSanitizer.custom_field_value(value)
+      end
     else
       custom_fields
     end
@@ -68,6 +82,11 @@ class Employee < ApplicationRecord
       end
 
       next if value.blank?
+
+      if value.is_a?(Array) || value.is_a?(Hash)
+        errors.add(:custom_fields, "#{definition.label} must be a scalar value")
+        next
+      end
 
       case definition.field_type
       when 'number'

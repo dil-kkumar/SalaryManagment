@@ -19,13 +19,13 @@ class CountryCustomField < ApplicationRecord
   private
 
   def normalize_attributes
-    self.country = country.to_s.strip
-    self.label = label.to_s.strip
+    self.country = InputSanitizer.text(country, max_length: 100)
+    self.label = InputSanitizer.text(label, max_length: 100)
     self.field_key = if field_key.present?
-      field_key.to_s.strip.downcase.gsub(/[^a-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
+      InputSanitizer.text(field_key, max_length: 100).to_s.downcase.gsub(/[^a-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
     else
-      label.to_s.strip.downcase.gsub(/[^a-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
+      label.to_s.downcase.gsub(/[^a-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
     end
-    self.placeholder = placeholder.to_s.strip.presence
+    self.placeholder = InputSanitizer.text(placeholder, max_length: 255)
   end
 end

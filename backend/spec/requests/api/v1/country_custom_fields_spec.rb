@@ -36,6 +36,24 @@ RSpec.describe 'Api::V1::CountryCustomFields', type: :request do
       expect(json['field_key']).to eq('pan_number')
       expect(json['country']).to eq('India')
     end
+
+    it 'sanitizes text inputs before creating a field definition' do
+      post base_url, params: {
+        country_custom_field: {
+          country: ' <b>India</b> ',
+          label: ' <script>PAN Number</script> ',
+          placeholder: ' <i>ABCDE1234F</i> ',
+          field_type: 'text',
+          required: true
+        }
+      }
+
+      expect(response).to have_http_status(:created)
+      expect(json['country']).to eq('India')
+      expect(json['label']).to eq('PAN Number')
+      expect(json['field_key']).to eq('pan_number')
+      expect(json['placeholder']).to eq('ABCDE1234F')
+    end
   end
 
   describe 'PUT /api/v1/country_custom_fields/:id' do

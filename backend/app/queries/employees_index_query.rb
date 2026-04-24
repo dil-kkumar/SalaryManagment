@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class EmployeesIndexQuery
+  FILTERABLE_FIELDS = %i[country department job_title status employment_type].freeze
   SORTABLE_COLUMNS = %w[
     first_name
     last_name
@@ -41,18 +42,20 @@ class EmployeesIndexQuery
 
   def filtered_scope
     scope = Employee.all
-    scope = scope.where(country: params[:country]) if params[:country].present?
-    scope = scope.where(department: params[:department]) if params[:department].present?
-    scope = scope.where(job_title: params[:job_title]) if params[:job_title].present?
-    scope = scope.where(status: params[:status]) if params[:status].present?
-    scope = scope.where(employment_type: params[:employment_type]) if params[:employment_type].present?
+
+    FILTERABLE_FIELDS.each do |field|
+      value = sanitized_param(field)
+      scope = scope.where(field => value) if value.present?
+    end
+
     scope
   end
 
   def searched_scope(scope)
-    return scope unless params[:search].present?
+    term = sanitized_param(:search)
+    return scope unless term.present?
 
-    term = "%#{params[:search].downcase}%"
+    term = "%#{ActiveRecord::Base.sanitize_sql_like(term.downcase)}%"
     scope.where(
       "LOWER(first_name || ' ' || last_name) LIKE :term OR LOWER(email) LIKE :term",
       term: term
@@ -60,8 +63,14 @@ class EmployeesIndexQuery
   end
 
   def sorted_scope(scope)
-    sort_col = SORTABLE_COLUMNS.include?(params[:sort]) ? params[:sort] : 'last_name'
-    sort_dir = params[:direction] == 'desc' ? 'DESC' : 'ASC'
-    scope.order(Arel.sql("#{sort_col} #{sort_dir}"))
+    sort_col = params[:sort]
+    return scope.order(last_name: :asc) unless SORTABLE_COLUMNS.include?(sort_col)
+
+    sort_dir = params[:direction] == 'desc' ? :desc : :asc
+    scope.order(sort_col => sort_dir)
+  end
+
+  def sanitized_param(key)
+    InputSanitizer.text(params[key], max_length: 100)
   end
 end

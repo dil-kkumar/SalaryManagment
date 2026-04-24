@@ -77,6 +77,15 @@ RSpec.describe 'Api::V1::Employees', type: :request do
         salaries = json['items'].map { |e| e['salary'].to_f }
         expect(salaries).to eq(salaries.sort.reverse)
       end
+
+      it 'falls back to a safe default order for invalid sort input' do
+        create(:employee, last_name: 'Aardvark', email: 'aardvark@example.com')
+
+        get base_url, params: { sort: 'salary DESC; DROP TABLE employees; --', direction: 'desc' }
+
+        expect(response).to have_http_status(:ok)
+        expect(json['items'].first['last_name']).to eq('Aardvark')
+      end
     end
   end
 
@@ -145,6 +154,36 @@ RSpec.describe 'Api::V1::Employees', type: :request do
 
       expect(response).to have_http_status(:created)
       expect(json['custom_fields']).to eq({ 'pan_number' => 'ABCDE1234F' })
+    end
+
+    it 'sanitizes employee string inputs before persisting' do
+      create(:country_custom_field,
+             country: 'USA',
+             field_key: 'work_mode',
+             label: 'Work Mode',
+             field_type: 'text')
+
+      params = valid_params.deep_dup
+      params[:employee].merge!(
+        first_name: '  <b>Jane</b>  ',
+        last_name: "\n Doe ",
+        email: '  Jane.Doe@Example.com ',
+        job_title: ' <i>Software Engineer</i> ',
+        department: ' <script>Engineering</script> ',
+        country: ' USA ',
+        custom_fields: { work_mode: ' <strong>Remote</strong> ' }
+      )
+
+      post base_url, params: params
+
+      expect(response).to have_http_status(:created)
+      expect(json['first_name']).to eq('Jane')
+      expect(json['last_name']).to eq('Doe')
+      expect(json['email']).to eq('jane.doe@example.com')
+      expect(json['job_title']).to eq('Software Engineer')
+      expect(json['department']).to eq('Engineering')
+      expect(json['country']).to eq('USA')
+      expect(json['custom_fields']).to eq({ 'work_mode' => 'Remote' })
     end
   end
 
